@@ -6,22 +6,32 @@ const Funder =
 
 const VictimGroup =
  {
-      getToken: Fun([Bytes(64)], Null)
+      victimArea: Bytes(64),
+      numberOfFamilies: UInt,
+      getTokens: Fun([UInt], Null)
  };
-//, ["VictimGrp", VictimGroup]
+
 export const main =
   Reach.App(
     {},
-    [['Org', Funder]],
-    (org) => {
+    [['Org', Funder], ['VictimGrp', VictimGroup]],
+    (org, victims) => {
       org.only(() => {
         const paymentMethod = declassify(interact.getPaymentMethod()); 
         const fundingAmount = declassify(interact.sendFundMoney());
       });
-      org.publish(paymentMethod);
+
+      org.publish(paymentMethod, fundingAmount)
+       .pay(fundingAmount);
       commit();
-      org.publish(fundingAmount);
+
+      victims.only(() => {
+        interact.getTokens(fundingAmount);
+      });
+      victims.publish();
+    
+      transfer(fundingAmount).to(victims);
       commit();
-     
+
       exit(); 
     });

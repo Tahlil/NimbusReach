@@ -1,22 +1,29 @@
 let exec = require('child_process').exec;
 const msgpack = require("msgpack-lite");
 function splitLines(t) { return t.split(/\r\n|\r|\n/); }
-exec('REACH_CONNECTOR_MODE=ALGO REACH_DEBUG=1 ./reach run', (err, stdout, stderr) =>{
+exec('cd NimbusReliefFunding && REACH_CONNECTOR_MODE=ALGO REACH_DEBUG=1 ./reach run', (err, stdout, stderr) =>{
     let splited = splitLines(stdout);
     let transationNumber = 1;
     console.log("Transations:");
     let isSmartContract = false;
+    let startOfSmartContract = false;
     for(line of splited){
         //console.log(line);
         if (isSmartContract) {
-            console.log("Transation number:" + transationNumber);
+            if (!startOfSmartContract) {
+                console.log("Transation number:" + transationNumber);
+                startOfSmartContract = true;
+            }
             console.log(line);
             transationNumber++;
-            isSmartContract = false;
+            if(line === "}"){
+                isSmartContract = false;
+                startOfSmartContract = false;
+            }
         }
         if(line.startsWith("smart contract transaction:")){
             isSmartContract = true;
-            
+            // console.log("Is smart contract");
             continue;
         }
         if(line.includes("sendAndConfirm:")){
@@ -26,9 +33,8 @@ exec('REACH_CONNECTOR_MODE=ALGO REACH_DEBUG=1 ./reach run', (err, stdout, stderr
             for (const key in decoded) {
                 if (Object.hasOwnProperty.call(decoded, key)) {
                     const element = decoded[key];
-                    // console.log("key");
+                    // console.log("key:");
                     // console.log(key);
-                    // console.log("Element");
                     process.stdout.write(key + ": ")
                     if(key === "sig"){                     
                         console.log(Buffer.from(element).toString('base64'));    
